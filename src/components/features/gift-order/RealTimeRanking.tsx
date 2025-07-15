@@ -117,7 +117,7 @@ export function RealTimeRanking({
 
       <ProductGrid>
         {displayedProducts.length === 0 ? (
-          <EmptyMessage>상품 목록이 없습니다.</EmptyMessage>
+          <EmptyMessage>상품이 없습니다.</EmptyMessage>
         ) : (
           displayedProducts.map((product, index) => (
             <ProductCardComponent
