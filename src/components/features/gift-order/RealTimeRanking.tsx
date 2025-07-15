@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import type { Product, TargetFilter, CategoryFilter } from '@/types';
 import { ProductCard } from './ProductCard';
+import { useState } from 'react';
 
 interface RealTimeRankingProps {
   products: Product[];
   ProductCardComponent?: typeof ProductCard;
+  targetType: string;
+  rankType: string;
+  onFilterChange: (nextTarget: string, nextRank: string) => void;
 }
 
 const INITIAL_PRODUCT_COUNT = 6;
@@ -19,12 +22,6 @@ const TARGET_KR_TO_EN_MAP: Record<TargetFilter, string> = {
   청소년이: 'TEEN',
 };
 
-const CATEGORY_KR_TO_EN_MAP: Record<CategoryFilter, string> = {
-  '받고 싶어한': 'WANT_TO_RECEIVE',
-  '많이 선물한': 'MANY_GIFT',
-  '위시로 받은': 'MANY_WISH',
-};
-
 const TARGET_EN_TO_KR_MAP: Record<string, TargetFilter> = {
   ALL: '전체',
   FEMALE: '여성이',
@@ -32,10 +29,16 @@ const TARGET_EN_TO_KR_MAP: Record<string, TargetFilter> = {
   TEEN: '청소년이',
 };
 
+const CATEGORY_KR_TO_EN_MAP: Record<CategoryFilter, string> = {
+  '받고 싶어한': 'MANY_WISH',
+  '많이 선물한': 'MANY_RECEIVE',
+  '위시로 받은': 'MANY_WISH_RECEIVE',
+};
+
 const CATEGORY_EN_TO_KR_MAP: Record<string, CategoryFilter> = {
-  WANT_TO_RECEIVE: '받고 싶어한',
-  MANY_GIFT: '많이 선물한',
-  MANY_WISH: '위시로 받은',
+  MANY_WISH: '받고 싶어한',
+  MANY_RECEIVE: '많이 선물한',
+  MANY_WISH_RECEIVE: '위시로 받은',
 };
 
 const profileIconMap: Record<TargetFilter, string> = {
@@ -48,55 +51,31 @@ const profileIconMap: Record<TargetFilter, string> = {
 const getProfileIconText = (filter: TargetFilter) =>
   profileIconMap[filter] || 'ALL';
 
-export function getInitialTargetFilter(
-  searchParams: URLSearchParams
-): TargetFilter {
-  const targetType = searchParams.get('targetType');
-  return targetType && TARGET_EN_TO_KR_MAP[targetType]
-    ? TARGET_EN_TO_KR_MAP[targetType]
-    : '전체';
-}
-
-export function getInitialCategoryFilter(
-  searchParams: URLSearchParams
-): CategoryFilter {
-  const categoryType = searchParams.get('categoryType');
-  return categoryType && CATEGORY_EN_TO_KR_MAP[categoryType]
-    ? CATEGORY_EN_TO_KR_MAP[categoryType]
-    : '받고 싶어한';
-}
-
 export function RealTimeRanking({
   products,
   ProductCardComponent = ProductCard,
+  targetType,
+  rankType,
+  onFilterChange,
 }: RealTimeRankingProps) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
   const [showAll, setShowAll] = useState(false);
 
-  const selectedTarget: TargetFilter = getInitialTargetFilter(searchParams);
+  const selectedTarget: TargetFilter =
+    TARGET_EN_TO_KR_MAP[targetType] || '전체';
   const selectedCategory: CategoryFilter =
-    getInitialCategoryFilter(searchParams);
-
-  const updateURL = (target: TargetFilter, category: CategoryFilter) => {
-    const targetCode = TARGET_KR_TO_EN_MAP[target];
-    const categoryCode = CATEGORY_KR_TO_EN_MAP[category];
-    navigate(`?targetType=${targetCode}&categoryType=${categoryCode}`, {
-      replace: true,
-    });
-  };
+    CATEGORY_EN_TO_KR_MAP[rankType] || '받고 싶어한';
 
   const displayedProducts = showAll
     ? products
     : products.slice(0, INITIAL_PRODUCT_COUNT);
 
   const handleTargetFilterChange = (filter: TargetFilter) => {
-    updateURL(filter, selectedCategory);
+    onFilterChange(TARGET_KR_TO_EN_MAP[filter], rankType);
   };
 
   const handleCategoryFilterChange = (category: CategoryFilter) => {
-    updateURL(selectedTarget, category);
+    onFilterChange(targetType, CATEGORY_KR_TO_EN_MAP[category]);
   };
 
   const handleProductClick = (product: Product) => {
@@ -137,20 +116,26 @@ export function RealTimeRanking({
       </SortContainer>
 
       <ProductGrid>
-        {displayedProducts.map((product, index) => (
-          <ProductCardComponent
-            key={product.id}
-            product={product}
-            rank={index + 1}
-            onClick={handleProductClick}
-            showRankBadge
-          />
-        ))}
+        {displayedProducts.length === 0 ? (
+          <EmptyMessage>상품 목록이 없습니다.</EmptyMessage>
+        ) : (
+          displayedProducts.map((product, index) => (
+            <ProductCardComponent
+              key={product.id}
+              product={product}
+              rank={index + 1}
+              onClick={handleProductClick}
+              showRankBadge
+            />
+          ))
+        )}
       </ProductGrid>
 
-      <MoreButton onClick={() => setShowAll(!showAll)}>
-        {showAll ? '접기' : '더보기'}
-      </MoreButton>
+      {displayedProducts.length > 0 && (
+        <MoreButton onClick={() => setShowAll(!showAll)}>
+          {showAll ? '접기' : '더보기'}
+        </MoreButton>
+      )}
     </Container>
   );
 }
@@ -251,6 +236,14 @@ const ProductGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: ${theme.spacing.spacing2};
   margin-bottom: ${theme.spacing.spacing4};
+`;
+
+const EmptyMessage = styled.div`
+  text-align: center;
+  padding: 40px 0;
+  width: 100%;
+  color: ${theme.colors.textDefault};
+  grid-column: 1 / -1;
 `;
 
 const MoreButton = styled.button`
