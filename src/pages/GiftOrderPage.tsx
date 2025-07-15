@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import { NavigationHeader } from '@/components/shared/layout';
 import { FormField } from '@/components/shared/ui';
-import { messageCardTemplates, rankingProducts } from '@/mock/mockData';
+import { messageCardTemplates } from '@/mock/mockData';
 import type { MessageCardTemplate, Product, Recipient } from '@/types';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
@@ -13,17 +13,34 @@ import RecipientModal from '@/components/features/gift-order/RecipientModal';
 import { RecipientTable } from '@/components/features/gift-order';
 import { orderSchema } from '@/schemas/giftOrderSchemas';
 
-interface GiftOrderPageProps {
-  product?: Product;
-}
-
 type OrderForm = z.infer<typeof orderSchema>;
 
-export default function GiftOrderPage({
-  product = rankingProducts[0],
-}: GiftOrderPageProps) {
+export default function GiftOrderPage() {
   const navigate = useNavigate();
+  const { productId } = useParams();
   const modalBodyRef = useRef<HTMLDivElement>(null);
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!productId) return;
+    const apiUrl = import.meta.env.VITE_API_URL;
+    setLoading(true);
+    setError(false);
+    fetch(`${apiUrl}/api/products/${productId}`)
+      .then(res => res.json())
+      .then(data => {
+        setProduct(data.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setProduct(null);
+        setError(true);
+        setLoading(false);
+      });
+  }, [productId]);
 
   const {
     control,
@@ -79,6 +96,9 @@ export default function GiftOrderPage({
     setValue('message', template.defaultTextMessage);
     setValue('selectedTemplate', template);
   };
+
+  if (loading) return <div>로딩중...</div>;
+  if (error || !product) return <div>상품 정보를 불러올 수 없습니다.</div>;
 
   const displayProductName = product.name.replace(/\s\d+$/, '');
 
@@ -185,12 +205,12 @@ export default function GiftOrderPage({
           <ProductSection>
             <SectionTitle>상품 정보</SectionTitle>
             <ProductInfo>
-              <ProductImage src={product.imageURL} alt={product.name} />
+              <ProductImage src={product!.imageURL} alt={product!.name} />
               <ProductDetails>
                 <ProductName>{displayProductName}</ProductName>
-                <ProductBrand>{product.brandInfo.name}</ProductBrand>
+                <ProductBrand>{product!.brandInfo.name}</ProductBrand>
                 <ProductPrice>
-                  상품가 {product.price.sellingPrice}원
+                  상품가 {product!.price.sellingPrice}원
                 </ProductPrice>
               </ProductDetails>
             </ProductInfo>
@@ -206,7 +226,7 @@ export default function GiftOrderPage({
 
         <OrderButton onClick={handleSubmit(onSubmit)}>
           {calculateTotalPrice(
-            product.price.sellingPrice,
+            product!.price.sellingPrice,
             getValues('recipients')
           )}
           원 주문하기
