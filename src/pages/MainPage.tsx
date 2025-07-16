@@ -2,7 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import { NavigationHeader } from '@/components/shared/layout';
 import {
   FriendSelector,
-  GiftCategoryGrid,
+  GiftThemeGrid,
   PromotionBanner,
   RealTimeRanking,
   ProductCard,
@@ -19,9 +19,9 @@ const DEFAULT_RANK = 'MANY_RECEIVE';
 function ThemesSection() {
   const { themes, loading, error } = useThemes();
   if (loading) return <Spinner />;
-  if (error) return <div>테마를 불러오지 못했습니다.</div>;
+  if (error) return null;
   if (themes.length === 0) return null;
-  return <GiftCategoryGrid themes={themes} />;
+  return <GiftThemeGrid themes={themes} />;
 }
 
 const RankingLoadingContainer = styled.div`
@@ -51,7 +51,7 @@ function RankingSection({
         <Spinner />
       </RankingLoadingContainer>
     );
-  if (error) return <div>상품이 없습니다.</div>;
+  if (error) return null;
 
   return (
     <RealTimeRanking
