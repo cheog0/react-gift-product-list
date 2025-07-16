@@ -29,7 +29,7 @@ const RankingLoadingContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #fff;
+  background: ${theme.colors.default};
   border-radius: 16px;
   margin: 0 0 24px 0;
 `;
