@@ -3,15 +3,12 @@ import { theme } from '@/styles/theme';
 import type { GiftTheme } from '@/types';
 import { GiftThemeItem } from './GiftThemeItem';
 
-interface GiftCategoryGridProps {
-  themes: GiftTheme[];
-  onThemeClick?: (theme: GiftTheme) => void;
+interface GiftThemeGridProps {
+  themes: any[];
+  onThemeClick?: (theme: any) => void;
 }
 
-export function GiftCategoryGrid({
-  themes,
-  onThemeClick,
-}: GiftCategoryGridProps) {
+export function GiftThemeGrid({ themes, onThemeClick }: GiftThemeGridProps) {
   const handleThemeClick = (theme: GiftTheme) => {
     onThemeClick?.(theme);
   };

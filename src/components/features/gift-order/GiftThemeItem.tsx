@@ -35,7 +35,7 @@ const StyledThemeItem = styled.button`
 const ThemeImage = styled.img`
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: 18px;
   margin-bottom: ${theme.spacing.spacing2};
   object-fit: cover;
 
