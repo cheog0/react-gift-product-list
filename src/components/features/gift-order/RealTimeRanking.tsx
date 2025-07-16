@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
-import type { Product, TargetFilter, CategoryFilter } from '@/types';
+import type { Product } from '@/types';
 import { ProductCard } from './ProductCard';
 import { useState } from 'react';
 
@@ -15,41 +15,24 @@ interface RealTimeRankingProps {
 
 const INITIAL_PRODUCT_COUNT = 6;
 
-const TARGET_KR_TO_EN_MAP: Record<TargetFilter, string> = {
-  전체: 'ALL',
-  여성이: 'FEMALE',
-  남성이: 'MALE',
-  청소년이: 'TEEN',
-};
+interface FilterOption {
+  id: string;
+  label: string;
+  icon?: string;
+}
 
-const TARGET_EN_TO_KR_MAP: Record<string, TargetFilter> = {
-  ALL: '전체',
-  FEMALE: '여성이',
-  MALE: '남성이',
-  TEEN: '청소년이',
-};
+const targetFilters: FilterOption[] = [
+  { id: 'ALL', label: '전체', icon: 'ALL' },
+  { id: 'FEMALE', label: '여성이', icon: '👩🏻' },
+  { id: 'MALE', label: '남성이', icon: '👨🏻' },
+  { id: 'TEEN', label: '청소년이', icon: '👦🏻' },
+];
 
-const CATEGORY_KR_TO_EN_MAP: Record<CategoryFilter, string> = {
-  '받고 싶어한': 'MANY_WISH',
-  '많이 선물한': 'MANY_RECEIVE',
-  '위시로 받은': 'MANY_WISH_RECEIVE',
-};
-
-const CATEGORY_EN_TO_KR_MAP: Record<string, CategoryFilter> = {
-  MANY_WISH: '받고 싶어한',
-  MANY_RECEIVE: '많이 선물한',
-  MANY_WISH_RECEIVE: '위시로 받은',
-};
-
-const profileIconMap: Record<TargetFilter, string> = {
-  전체: 'ALL',
-  여성이: '👩🏻',
-  남성이: '👨🏻',
-  청소년이: '👦🏻',
-};
-
-const getProfileIconText = (filter: TargetFilter) =>
-  profileIconMap[filter] || 'ALL';
+const categoryFilters: FilterOption[] = [
+  { id: 'MANY_WISH', label: '받고 싶어한' },
+  { id: 'MANY_RECEIVE', label: '많이 선물한' },
+  { id: 'MANY_WISH_RECEIVE', label: '위시로 받은' },
+];
 
 export function RealTimeRanking({
   products,
@@ -61,21 +44,19 @@ export function RealTimeRanking({
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
 
-  const selectedTarget: TargetFilter =
-    TARGET_EN_TO_KR_MAP[targetType] || '전체';
-  const selectedCategory: CategoryFilter =
-    CATEGORY_EN_TO_KR_MAP[rankType] || '받고 싶어한';
+  const selectedTargetId = targetType || 'ALL';
+  const selectedCategoryId = rankType || 'MANY_WISH';
 
   const displayedProducts = showAll
     ? products
     : products.slice(0, INITIAL_PRODUCT_COUNT);
 
-  const handleTargetFilterChange = (filter: TargetFilter) => {
-    onFilterChange(TARGET_KR_TO_EN_MAP[filter], rankType);
+  const handleTargetFilterChange = (id: string) => {
+    onFilterChange(id, selectedCategoryId);
   };
 
-  const handleCategoryFilterChange = (category: CategoryFilter) => {
-    onFilterChange(targetType, CATEGORY_KR_TO_EN_MAP[category]);
+  const handleCategoryFilterChange = (id: string) => {
+    onFilterChange(selectedTargetId, id);
   };
 
   const handleProductClick = (product: Product) => {
@@ -89,28 +70,28 @@ export function RealTimeRanking({
       <FilterContainer>
         {targetFilters.map(filter => (
           <FilterTab
-            key={filter}
-            isActive={selectedTarget === filter}
-            onClick={() => handleTargetFilterChange(filter)}
+            key={filter.id}
+            isActive={selectedTargetId === filter.id}
+            onClick={() => handleTargetFilterChange(filter.id)}
           >
-            <ProfileIcon isActive={selectedTarget === filter}>
-              {getProfileIconText(filter)}
+            <ProfileIcon isActive={selectedTargetId === filter.id}>
+              {filter.icon}
             </ProfileIcon>
-            <FilterLabel isActive={selectedTarget === filter}>
-              {filter}
+            <FilterLabel isActive={selectedTargetId === filter.id}>
+              {filter.label}
             </FilterLabel>
           </FilterTab>
         ))}
       </FilterContainer>
 
       <SortContainer>
-        {categoryFilter.map(category => (
+        {categoryFilters.map(category => (
           <SortButton
-            key={category}
-            isActive={selectedCategory === category}
-            onClick={() => handleCategoryFilterChange(category)}
+            key={category.id}
+            isActive={selectedCategoryId === category.id}
+            onClick={() => handleCategoryFilterChange(category.id)}
           >
-            {category}
+            {category.label}
           </SortButton>
         ))}
       </SortContainer>
@@ -139,13 +120,6 @@ export function RealTimeRanking({
     </Container>
   );
 }
-
-const targetFilters: TargetFilter[] = ['전체', '여성이', '남성이', '청소년이'];
-const categoryFilter: CategoryFilter[] = [
-  '받고 싶어한',
-  '많이 선물한',
-  '위시로 받은',
-];
 
 const Container = styled.div`
   padding: ${theme.spacing.spacing4};
@@ -198,12 +172,6 @@ const ProfileIcon = styled.div<{ isActive: boolean }>`
 
 const FilterLabel = styled.span<{ isActive: boolean }>`
   font-size: ${theme.typography.label1Regular.fontSize};
-  font-weight: ${props =>
-    props.isActive
-      ? theme.typography.label1Bold.fontWeight
-      : theme.typography.label1Regular.fontWeight};
-  color: ${props =>
-    props.isActive ? theme.colors.blue700 : theme.colors.textDefault};
 `;
 
 const SortContainer = styled.div`
