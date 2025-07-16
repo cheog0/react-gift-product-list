@@ -74,7 +74,10 @@ export default function MainPage() {
   };
 
   const handleRankingFilterChange = (nextTarget: string, nextRank: string) => {
-    setSearchParams({ targetType: nextTarget, rankType: nextRank });
+    setSearchParams(
+      { targetType: nextTarget, rankType: nextRank },
+      { replace: true }
+    );
   };
 
   return (
