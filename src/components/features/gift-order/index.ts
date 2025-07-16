@@ -1,4 +1,4 @@
-export { GiftCategoryGrid } from './GiftCategoryGrid';
+export { GiftThemeGrid } from './GiftThemeGrid';
 export { GiftThemeItem } from './GiftThemeItem';
 export { ProductCard } from './ProductCard';
 export { FriendSelector } from './FriendSelector';
