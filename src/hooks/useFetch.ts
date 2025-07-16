@@ -12,11 +12,12 @@ export function useFetch<T>(url: string, deps: any[] = []) {
       .then(res => res.json())
       .then(data => {
         setData(data.data);
-        setLoading(false);
       })
       .catch(() => {
         setData(null);
         setError(true);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, deps);
