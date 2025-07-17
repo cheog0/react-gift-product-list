@@ -5,7 +5,7 @@ import { theme } from '@/styles/theme';
 import { NavigationHeader } from '@/components/shared/layout';
 import { FormField } from '@/components/shared/ui';
 import { messageCardTemplates } from '@/mock/mockData';
-import type { MessageCardTemplate, Product, Recipient } from '@/types';
+import type { MessageCardTemplate } from '@/types';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,13 +17,21 @@ import { useAuth } from '@/contexts/AuthContext';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
+type ProductSummary = {
+  id: number;
+  name: string;
+  brandName?: string;
+  price: number;
+  imageURL: string;
+};
+
 export default function GiftOrderPage() {
   const navigate = useNavigate();
   const { productId } = useParams();
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<ProductSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -32,7 +40,11 @@ export default function GiftOrderPage() {
     const apiUrl = import.meta.env.VITE_API_URL as string;
     setLoading(true);
     setError(false);
-    fetch(`${apiUrl}/api/products/${productId}`)
+    fetch(`${apiUrl}/api/products/${productId}/summary`, {
+      headers: {
+        Accept: 'application/json',
+      },
+    })
       .then(async res => {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -86,23 +98,43 @@ export default function GiftOrderPage() {
 
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
-  const onSubmit = (data: OrderForm) => {
-    const totalQuantity = data.recipients.reduce(
-      (sum: number, r: Recipient) => sum + r.quantity,
-      0
-    );
-    alert(
-      '주문이 완료되었습니다.' +
-        '\n상품명: ' +
-        displayProductName +
-        '\n구매 수량: ' +
-        totalQuantity +
-        '\n발신자 이름: ' +
-        data.senderName +
-        '\n메시지: ' +
-        data.message
-    );
-    navigate('/');
+  const onSubmit = async (data: OrderForm) => {
+    if (!user) {
+      toast.error('로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL as string;
+      const res = await fetch(`${apiUrl}/api/order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.authToken}`,
+        },
+        body: JSON.stringify({
+          productId: product?.id,
+          senderName: data.senderName,
+          message: data.message,
+          selectedTemplate: data.selectedTemplate,
+          recipients: data.recipients,
+        }),
+      });
+      if (res.status === 401) {
+        toast.error('로그인이 만료되었습니다. 다시 로그인 해주세요.');
+        navigate('/login');
+        return;
+      }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.message || '주문에 실패했습니다.');
+        return;
+      }
+      toast.success('주문이 완료되었습니다!');
+      navigate('/');
+    } catch (e) {
+      toast.error('네트워크 오류가 발생했습니다.');
+    }
   };
 
   const handleBackClick = () => {
@@ -219,19 +251,22 @@ export default function GiftOrderPage() {
           </FormSection>
           <Separator />
 
-          <ProductSection>
-            <SectionTitle>상품 정보</SectionTitle>
-            <ProductInfo>
-              <ProductImage src={product!.imageURL} alt={product!.name} />
-              <ProductDetails>
-                <ProductName>{displayProductName}</ProductName>
-                <ProductBrand>{product!.brandInfo.name}</ProductBrand>
-                <ProductPrice>
-                  상품가 {product!.price.sellingPrice}원
-                </ProductPrice>
-              </ProductDetails>
-            </ProductInfo>
-          </ProductSection>
+          {/* 상품 정보 */}
+          {product && (
+            <ProductSection>
+              <SectionTitle>상품 정보</SectionTitle>
+              <ProductInfo>
+                <ProductImage src={product.imageURL} alt={product.name} />
+                <ProductDetails>
+                  <ProductName>{product.name}</ProductName>
+                  <ProductBrand>
+                    {product.brandName ?? '브랜드 정보 없음'}
+                  </ProductBrand>
+                  <ProductPrice>상품가 {product.price}원</ProductPrice>
+                </ProductDetails>
+              </ProductInfo>
+            </ProductSection>
+          )}
         </FormContainer>
         <RecipientModal
           isOpen={isRecipientModalOpen}
@@ -241,13 +276,12 @@ export default function GiftOrderPage() {
           modalBodyRef={modalBodyRef}
         />
 
-        <OrderButton onClick={handleSubmit(onSubmit)}>
-          {calculateTotalPrice(
-            product!.price.sellingPrice,
-            getValues('recipients')
-          )}
-          원 주문하기
-        </OrderButton>
+        {product && (
+          <OrderButton onClick={handleSubmit(onSubmit)}>
+            {product.price * calculateTotalQuantity(getValues('recipients'))}원
+            주문하기
+          </OrderButton>
+        )}
       </MobileViewport>
     </AppContainer>
   );
