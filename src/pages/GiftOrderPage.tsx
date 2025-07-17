@@ -13,6 +13,7 @@ import RecipientModal from '@/components/features/gift-order/RecipientModal';
 import { RecipientTable } from '@/components/features/gift-order';
 import { orderSchema } from '@/schemas/giftOrderSchemas';
 import { toast } from 'react-toastify';
+import { useAuth } from '@/contexts/AuthContext';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
@@ -20,6 +21,7 @@ export default function GiftOrderPage() {
   const navigate = useNavigate();
   const { productId } = useParams();
   const modalBodyRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,12 +64,18 @@ export default function GiftOrderPage() {
   } = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
-      senderName: '',
+      senderName: user?.name || '',
       message: messageCardTemplates[0].defaultTextMessage,
       selectedTemplate: messageCardTemplates[0],
       recipients: [],
     },
   });
+
+  useEffect(() => {
+    if (user?.name) {
+      setValue('senderName', user.name);
+    }
+  }, [user?.name, setValue]);
 
   const selectedTemplate = watch('selectedTemplate');
 
