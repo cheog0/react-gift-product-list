@@ -15,6 +15,7 @@ import { orderSchema } from '@/schemas/giftOrderSchemas';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spinner } from '@/components/shared/ui';
+import { STORAGE_KEY } from '@/constants/storage';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
@@ -100,7 +101,7 @@ export default function GiftOrderPage() {
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
   const onSubmit = async (data: OrderForm) => {
-    if (!user || !sessionStorage.getItem('kakaotech/userInfo')) {
+    if (!user || !sessionStorage.getItem(STORAGE_KEY.USER_INFO)) {
       toast.error('로그인이 필요합니다.');
       navigate('/login');
       return;
