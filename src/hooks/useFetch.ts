@@ -13,7 +13,6 @@ export function useFetch<T>(
   deps?: any[]
 ): { data: T | null; loading: boolean; error: Error | null };
 
-// 구현
 export function useFetch<T>(
   urlOrOptions:
     | string
