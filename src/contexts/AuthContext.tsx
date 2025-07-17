@@ -14,24 +14,26 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'kakaotech/userInfo';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('user');
+    const stored = sessionStorage.getItem(STORAGE_KEY);
     if (stored) setUser(JSON.parse(stored));
     setLoading(false);
   }, []);
 
   const login = (user: User) => {
     setUser(user);
-    localStorage.setItem('user', JSON.stringify(user));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    sessionStorage.removeItem(STORAGE_KEY);
   };
 
   if (loading) return null;
