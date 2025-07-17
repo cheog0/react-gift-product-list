@@ -31,7 +31,7 @@ export default function GiftOrderPage() {
   const navigate = useNavigate();
   const { productId } = useParams();
   const modalBodyRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
 
   const [product, setProduct] = useState<ProductSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,19 +101,33 @@ export default function GiftOrderPage() {
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
   const onSubmit = async (data: OrderForm) => {
-    if (!user || !sessionStorage.getItem(STORAGE_KEY.USER_INFO)) {
-      toast.error('로그인이 필요합니다.');
-      navigate('/login');
-      return;
+    let effectiveUser = user;
+    if (!sessionStorage.getItem('userInfo')) {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'userInfo',
+          oldValue: null,
+          newValue: null,
+          storageArea: sessionStorage,
+          url: window.location.href,
+        })
+      );
+      setUser(null);
+      effectiveUser = null;
     }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (effectiveUser?.authToken) {
+      headers['Authorization'] = effectiveUser.authToken;
+    }
+
     try {
       const apiUrl = import.meta.env.VITE_API_URL as string;
       const res = await fetch(`${apiUrl}/api/order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: user.authToken,
-        },
+        headers,
         body: JSON.stringify({
           productId: product?.id,
           ordererName: data.senderName,
@@ -127,7 +141,7 @@ export default function GiftOrderPage() {
         }),
       });
       if (res.status === 401) {
-        toast.error('로그인이 만료되었습니다. 다시 로그인 해주세요.');
+        toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
         navigate('/login');
         return;
       }
