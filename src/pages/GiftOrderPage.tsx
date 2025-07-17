@@ -14,6 +14,7 @@ import { RecipientTable } from '@/components/features/gift-order';
 import { orderSchema } from '@/schemas/giftOrderSchemas';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
+import { Spinner } from '@/components/shared/ui';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
@@ -146,7 +147,7 @@ export default function GiftOrderPage() {
     setValue('selectedTemplate', template);
   };
 
-  if (loading) return <div>로딩중...</div>;
+  if (loading) return <Spinner />;
   if (error || !product) return <div>상품 정보를 불러올 수 없습니다.</div>;
 
   const openModal = () => {
