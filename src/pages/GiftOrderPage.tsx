@@ -102,10 +102,10 @@ export default function GiftOrderPage() {
 
   const onSubmit = async (data: OrderForm) => {
     let effectiveUser = user;
-    if (!sessionStorage.getItem('userInfo')) {
+    if (!sessionStorage.getItem(STORAGE_KEY.USER_INFO)) {
       window.dispatchEvent(
         new StorageEvent('storage', {
-          key: 'userInfo',
+          key: STORAGE_KEY.USER_INFO,
           oldValue: null,
           newValue: null,
           storageArea: sessionStorage,
