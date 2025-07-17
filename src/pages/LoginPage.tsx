@@ -4,6 +4,8 @@ import { NavigationHeader } from '@/components/shared/layout';
 import { LoginForm } from '@/components/features/auth';
 import { theme } from '@/styles/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -15,9 +17,29 @@ export default function LoginPage() {
     navigate(from, { replace });
   };
 
-  const handleLogin = (email: string, _password: string) => {
-    login({ email });
-    handleRedirect(true);
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL as string;
+      const res = await fetch(`${apiUrl}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        toast.error(errData.message || '@kakao.com 이메일 주소만 가능합니다.');
+        return;
+      }
+      const data = await res.json();
+      login({
+        authToken: data.data.authToken,
+        email: data.data.email,
+        name: data.data.name,
+      });
+      handleRedirect(true);
+    } catch (e) {
+      toast.error('네트워크 오류가 발생했습니다.');
+    }
   };
 
   return (
