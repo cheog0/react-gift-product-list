@@ -14,7 +14,7 @@ import { useThemes } from '@/hooks/useThemes';
 import { useRankingProducts } from '@/hooks/useRankingProducts';
 
 const DEFAULT_TARGET = 'ALL';
-const DEFAULT_RANK = 'MANY_RECEIVE';
+const DEFAULT_RANK = 'MANY_WISH';
 
 function ThemesSection() {
   const { themes, loading, error } = useThemes();
