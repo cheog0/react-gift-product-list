@@ -100,7 +100,7 @@ export default function GiftOrderPage() {
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
   const onSubmit = async (data: OrderForm) => {
-    if (!user || !localStorage.getItem('user')) {
+    if (!user || !sessionStorage.getItem('kakaotech/userInfo')) {
       toast.error('로그인이 필요합니다.');
       navigate('/login');
       return;
