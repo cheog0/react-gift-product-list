@@ -26,7 +26,7 @@ export default function GiftOrderPage() {
 
   useEffect(() => {
     if (!productId) return;
-    const apiUrl = import.meta.env.VITE_API_URL;
+    const apiUrl = import.meta.env.VITE_API_URL as string;
     setLoading(true);
     setError(false);
     fetch(`${apiUrl}/api/products/${productId}`)
