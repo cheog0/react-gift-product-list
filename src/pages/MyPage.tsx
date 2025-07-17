@@ -7,7 +7,7 @@ export default function MyPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  if (!user || !sessionStorage.getItem('kakaotech/userInfo')) {
+  if (!user || !sessionStorage.getItem('userInfo')) {
     navigate('/login', { replace: true });
     return null;
   }
