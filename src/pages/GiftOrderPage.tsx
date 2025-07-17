@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import RecipientModal from '@/components/features/gift-order/RecipientModal';
 import { RecipientTable } from '@/components/features/gift-order';
 import { orderSchema } from '@/schemas/giftOrderSchemas';
+import { toast } from 'react-toastify';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
@@ -30,7 +31,15 @@ export default function GiftOrderPage() {
     setLoading(true);
     setError(false);
     fetch(`${apiUrl}/api/products/${productId}`)
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          toast.error(errData.message || '현재 없는 상품입니다');
+          navigate('/');
+          throw new Error('4XX');
+        }
+        return res.json();
+      })
       .then(data => {
         setProduct(data.data);
         setLoading(false);
