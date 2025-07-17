@@ -7,6 +7,12 @@ export function useThemes() {
     data: themes,
     loading,
     error,
-  } = useFetch<GiftTheme[]>(`${apiUrl}/api/themes`, []);
+  } = useFetch<GiftTheme[]>(
+    {
+      baseUrl: apiUrl,
+      path: '/api/themes',
+    },
+    []
+  );
   return { themes: themes || [], loading, error };
 }
