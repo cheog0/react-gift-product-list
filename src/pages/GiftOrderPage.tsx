@@ -149,8 +149,6 @@ export default function GiftOrderPage() {
   if (loading) return <div>로딩중...</div>;
   if (error || !product) return <div>상품 정보를 불러올 수 없습니다.</div>;
 
-  const displayProductName = product.name.replace(/\s\d+$/, '');
-
   const openModal = () => {
     setIsRecipientModalOpen(true);
   };
@@ -166,14 +164,6 @@ export default function GiftOrderPage() {
     recipients: { quantity: number }[]
   ): number => {
     return recipients.reduce((sum, recipient) => sum + recipient.quantity, 0);
-  };
-
-  const calculateTotalPrice = (
-    unitPrice: number,
-    recipients: { quantity: number }[]
-  ): number => {
-    const totalQuantity = calculateTotalQuantity(recipients);
-    return unitPrice * totalQuantity;
   };
 
   return (
