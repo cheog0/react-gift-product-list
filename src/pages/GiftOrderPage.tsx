@@ -111,14 +111,18 @@ export default function GiftOrderPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.authToken}`,
+          Authorization: user.authToken,
         },
         body: JSON.stringify({
           productId: product?.id,
-          senderName: data.senderName,
+          ordererName: data.senderName,
           message: data.message,
-          selectedTemplate: data.selectedTemplate,
-          recipients: data.recipients,
+          messageCardId: String(data.selectedTemplate.id),
+          receivers: data.recipients.map(r => ({
+            name: r.name,
+            phoneNumber: r.phone,
+            quantity: r.quantity,
+          })),
         }),
       });
       if (res.status === 401) {
@@ -128,10 +132,24 @@ export default function GiftOrderPage() {
       }
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        toast.error(errData.message || '주문에 실패했습니다.');
+        toast.error(errData.message || '받는 사람이 없습니다');
         return;
       }
-      toast.success('주문이 완료되었습니다!');
+      const totalQuantity = data.recipients.reduce(
+        (sum, r) => sum + r.quantity,
+        0
+      );
+      alert(
+        '주문이 완료되었습니다.' +
+          '\n상품명: ' +
+          product?.name +
+          '\n구매 수량: ' +
+          totalQuantity +
+          '\n발신자 이름: ' +
+          data.senderName +
+          '\n메시지: ' +
+          data.message
+      );
       navigate('/');
     } catch (e) {
       toast.error('네트워크 오류가 발생했습니다.');
