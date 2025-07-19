@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL as string;
+      const apiUrl = import.meta.env.VITE_API_URL;
       const res = await fetch(`${apiUrl}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

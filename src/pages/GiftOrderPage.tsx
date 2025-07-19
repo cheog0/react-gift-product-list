@@ -39,7 +39,7 @@ export default function GiftOrderPage() {
 
   useEffect(() => {
     if (!productId) return;
-    const apiUrl = import.meta.env.VITE_API_URL as string;
+    const apiUrl = import.meta.env.VITE_API_URL;
     setLoading(true);
     setError(false);
     fetch(`${apiUrl}/api/products/${productId}/summary`, {
@@ -124,7 +124,7 @@ export default function GiftOrderPage() {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL as string;
+      const apiUrl = import.meta.env.VITE_API_URL;
       const res = await fetch(`${apiUrl}/api/order`, {
         method: 'POST',
         headers,
