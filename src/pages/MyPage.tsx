@@ -7,11 +7,6 @@ export default function MyPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) {
-    navigate('/login', { replace: true });
-    return null;
-  }
-
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
