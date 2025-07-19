@@ -7,13 +7,11 @@ export function useRankingProducts(targetType: string, rankType: string) {
     data: products,
     loading,
     error,
-  } = useFetch<Product[]>(
-    {
-      baseUrl: apiUrl,
-      path: '/api/products/ranking',
-      searchParams: { targetType, rankType },
-    },
-    [targetType, rankType]
-  );
+  } = useFetch<Product[]>({
+    baseUrl: apiUrl,
+    path: '/api/products/ranking',
+    searchParams: { targetType, rankType },
+    deps: [targetType, rankType],
+  });
   return { products: products || [], loading, error };
 }
