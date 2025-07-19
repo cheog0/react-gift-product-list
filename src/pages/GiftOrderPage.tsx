@@ -233,7 +233,6 @@ export default function GiftOrderPage() {
           </FormSection>
           <Separator />
 
-          {/* 상품 정보 */}
           {product && (
             <ProductSection>
               <SectionTitle>상품 정보</SectionTitle>

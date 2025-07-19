@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type DependencyList } from 'react';
 
 export interface UseFetchOptions {
   baseUrl: string;
   path: string;
   searchParams?: Record<string, string>;
-  deps?: any[];
+  method?: string;
+  body?: any;
+  headers?: Record<string, string>;
+  deps?: DependencyList;
+  skip?: boolean;
 }
 
 export function getRequestUrl({
@@ -48,7 +52,6 @@ export function useFetch<T>(options: UseFetchOptions) {
       .finally(() => {
         setLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   return { data, loading, error };
