@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
@@ -15,6 +15,7 @@ import { orderSchema } from '@/schemas/giftOrderSchemas';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spinner } from '@/components/shared/ui';
+import { useFetch } from '@/hooks/useFetch';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
@@ -32,39 +33,15 @@ export default function GiftOrderPage() {
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
 
-  const [product, setProduct] = useState<ProductSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (!productId) return;
-    const apiUrl = import.meta.env.VITE_API_URL;
-    setLoading(true);
-    setError(false);
-    fetch(`${apiUrl}/api/products/${productId}/summary`, {
-      headers: {
-        Accept: 'application/json',
-      },
-    })
-      .then(async res => {
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          toast.error(errData.message || '현재 없는 상품입니다');
-          navigate('/');
-          throw new Error('4XX');
-        }
-        return res.json();
-      })
-      .then(data => {
-        setProduct(data.data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setProduct(null);
-        setError(true);
-        setLoading(false);
-      });
-  }, [productId]);
+  const {
+    data: product,
+    loading,
+    error,
+  } = useFetch<ProductSummary>({
+    baseUrl: import.meta.env.VITE_API_URL,
+    path: `/api/products/${productId}/summary`,
+    deps: [productId, navigate],
+  });
 
   const {
     control,
@@ -84,12 +61,6 @@ export default function GiftOrderPage() {
     },
   });
 
-  useEffect(() => {
-    if (user?.name) {
-      setValue('senderName', user.name);
-    }
-  }, [user?.name, setValue]);
-
   const selectedTemplate = watch('selectedTemplate');
 
   const { fields } = useFieldArray({
@@ -100,7 +71,6 @@ export default function GiftOrderPage() {
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
   const onSubmit = async (data: OrderForm) => {
-    let effectiveUser = user;
     if (!user) {
       logout();
       toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
@@ -108,18 +78,14 @@ export default function GiftOrderPage() {
       return;
     }
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (effectiveUser?.authToken) {
-      headers['Authorization'] = effectiveUser.authToken;
-    }
-
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
       const res = await fetch(`${apiUrl}/api/order`, {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.authToken ? { Authorization: user.authToken } : {}),
+        },
         body: JSON.stringify({
           productId: product?.id,
           ordererName: data.senderName,
@@ -132,15 +98,14 @@ export default function GiftOrderPage() {
           })),
         }),
       });
-      if (res.status === 401) {
-        toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
-        navigate('/login');
-        return;
-      }
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        toast.error(errData.message || '받는 사람이 없습니다');
-        return;
+        toast.error(errData.message || `에러: ${res.status}`);
+        if (res.status === 401) {
+          logout();
+          navigate('/login');
+        }
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
       const totalQuantity = data.recipients.reduce(
         (sum, r) => sum + r.quantity,
