@@ -6,7 +6,7 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { user } = useAuth();
   const location = useLocation();
 
-  if (!user || !sessionStorage.getItem('userInfo')) {
+  if (!user) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   return children;

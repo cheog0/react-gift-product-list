@@ -7,7 +7,7 @@ export default function MyPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  if (!user || !sessionStorage.getItem('userInfo')) {
+  if (!user) {
     navigate('/login', { replace: true });
     return null;
   }

@@ -15,7 +15,6 @@ import { orderSchema } from '@/schemas/giftOrderSchemas';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spinner } from '@/components/shared/ui';
-import { STORAGE_KEY } from '@/constants/storage';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
@@ -102,18 +101,11 @@ export default function GiftOrderPage() {
 
   const onSubmit = async (data: OrderForm) => {
     let effectiveUser = user;
-    if (!sessionStorage.getItem(STORAGE_KEY.USER_INFO)) {
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: STORAGE_KEY.USER_INFO,
-          oldValue: null,
-          newValue: null,
-          storageArea: sessionStorage,
-          url: window.location.href,
-        })
-      );
+    if (!user) {
       setUser(null);
-      effectiveUser = null;
+      toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
+      navigate('/login');
+      return;
     }
 
     const headers: Record<string, string> = {
