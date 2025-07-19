@@ -4,8 +4,8 @@ import type { GiftTheme } from '@/types';
 import { GiftThemeItem } from './GiftThemeItem';
 
 interface GiftThemeGridProps {
-  themes: any[];
-  onThemeClick?: (theme: any) => void;
+  themes: GiftTheme[];
+  onThemeClick?: (theme: GiftTheme) => void;
 }
 
 export function GiftThemeGrid({ themes, onThemeClick }: GiftThemeGridProps) {
