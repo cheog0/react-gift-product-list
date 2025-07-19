@@ -80,12 +80,17 @@ export default function GiftOrderPage() {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
+      const stored = sessionStorage.getItem('userInfo');
+      const token = stored ? JSON.parse(stored).authToken : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = token;
+      }
       const res = await fetch(`${apiUrl}/api/order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(user?.authToken ? { Authorization: user.authToken } : {}),
-        },
+        headers,
         body: JSON.stringify({
           productId: product?.id,
           ordererName: data.senderName,
@@ -100,13 +105,17 @@ export default function GiftOrderPage() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const msg = errData.message || '받는 사람이 없습니다';
-        toast.error(msg);
         if (res.status === 401) {
+          toast.error('로그인이 필요합니다');
           logout();
           navigate('/login');
+        } else {
+          const msg = errData.message || '받는 사람이 없습니다';
+          toast.error(msg);
         }
-        throw new Error(`HTTP error status: ${res.status}, message: ${msg}`);
+        throw new Error(
+          `HTTP error! status: ${res.status}, message: ${errData.message || ''}`
+        );
       }
       const totalQuantity = data.recipients.reduce(
         (sum, r) => sum + r.quantity,
