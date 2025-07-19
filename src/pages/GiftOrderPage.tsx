@@ -100,12 +100,13 @@ export default function GiftOrderPage() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        toast.error(errData.message || `에러: ${res.status}`);
+        const msg = errData.message || '받는 사람이 없습니다';
+        toast.error(msg);
         if (res.status === 401) {
           logout();
           navigate('/login');
         }
-        throw new Error(`HTTP error! status: ${res.status}`);
+        throw new Error(`HTTP error status: ${res.status}, message: ${msg}`);
       }
       const totalQuantity = data.recipients.reduce(
         (sum, r) => sum + r.quantity,
@@ -124,7 +125,7 @@ export default function GiftOrderPage() {
       );
       navigate('/');
     } catch (e) {
-      toast.error('네트워크 오류가 발생했습니다.');
+      return;
     }
   };
 
