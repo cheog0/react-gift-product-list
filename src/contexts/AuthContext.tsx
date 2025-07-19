@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { STORAGE_KEY } from '@/constants/storage';
+import { useStorageState } from '@/hooks/useStorageState';
 
 interface User {
   authToken: string;
@@ -17,38 +18,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const stored = sessionStorage.getItem(STORAGE_KEY.USER_INFO);
-    if (stored) setUser(JSON.parse(stored));
-    setLoading(false);
-  }, []);
+  const [user, setUser] = useStorageState<User | null>(
+    STORAGE_KEY.USER_INFO,
+    null
+  );
 
   const login = (user: User) => {
     setUser(user);
-    sessionStorage.setItem(STORAGE_KEY.USER_INFO, JSON.stringify(user));
   };
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem(STORAGE_KEY.USER_INFO);
   };
-
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY.USER_INFO && event.newValue === null) {
-        setUser(null);
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  if (loading) return null;
 
   return (
     <AuthContext.Provider value={{ user, login, logout, setUser }}>
