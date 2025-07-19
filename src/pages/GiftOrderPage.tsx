@@ -30,7 +30,7 @@ export default function GiftOrderPage() {
   const navigate = useNavigate();
   const { productId } = useParams();
   const modalBodyRef = useRef<HTMLDivElement>(null);
-  const { user, setUser } = useAuth();
+  const { user, logout } = useAuth();
 
   const [product, setProduct] = useState<ProductSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,7 @@ export default function GiftOrderPage() {
   const onSubmit = async (data: OrderForm) => {
     let effectiveUser = user;
     if (!user) {
-      setUser(null);
+      logout();
       toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
       navigate('/login');
       return;
