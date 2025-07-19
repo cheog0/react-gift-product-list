@@ -1,24 +1,28 @@
 import { useState, useEffect } from 'react';
 
-export function useFetch<T>(
-  url: string,
-  deps?: any[]
-): { data: T | null; loading: boolean; error: Error | null };
-export function useFetch<T>(
-  options: {
-    baseUrl: string;
-    path: string;
-    searchParams?: Record<string, string>;
-  },
-  deps?: any[]
-): { data: T | null; loading: boolean; error: Error | null };
+export interface UseFetchOptions {
+  baseUrl: string;
+  path: string;
+  searchParams?: Record<string, string>;
+  deps?: any[];
+}
 
-export function useFetch<T>(
-  urlOrOptions:
-    | string
-    | { baseUrl: string; path: string; searchParams?: Record<string, string> },
-  deps: any[] = []
-) {
+export function getRequestUrl({
+  baseUrl,
+  path,
+  searchParams,
+}: Omit<UseFetchOptions, 'deps'>): string {
+  const urlObj = new URL(path, baseUrl);
+  if (searchParams) {
+    Object.entries(searchParams).forEach(([key, value]) => {
+      urlObj.searchParams.set(key, value);
+    });
+  }
+  return urlObj.toString();
+}
+
+export function useFetch<T>(options: UseFetchOptions) {
+  const { baseUrl, path, searchParams, deps = [] } = options;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -26,21 +30,14 @@ export function useFetch<T>(
   useEffect(() => {
     setLoading(true);
     setError(null);
-    let url: string;
-    if (typeof urlOrOptions === 'string') {
-      url = urlOrOptions;
-    } else {
-      const { baseUrl, path, searchParams } = urlOrOptions;
-      const urlObj = new URL(path, baseUrl);
-      if (searchParams) {
-        Object.entries(searchParams).forEach(([key, value]) => {
-          urlObj.searchParams.set(key, value);
-        });
-      }
-      url = urlObj.toString();
-    }
+    const url = getRequestUrl({ baseUrl, path, searchParams });
     fetch(url)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
         setData(data.data);
       })
@@ -51,6 +48,7 @@ export function useFetch<T>(
       .finally(() => {
         setLoading(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   return { data, loading, error };
