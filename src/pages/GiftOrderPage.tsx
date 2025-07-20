@@ -5,42 +5,49 @@ import { theme } from '@/styles/theme';
 import { NavigationHeader } from '@/components/shared/layout';
 import { FormField } from '@/components/shared/ui';
 import { messageCardTemplates } from '@/mock/mockData';
-import type { MessageCardTemplate, Product, Recipient } from '@/types';
+import type { MessageCardTemplate } from '@/types';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import RecipientModal from '@/components/features/gift-order/RecipientModal';
 import { RecipientTable } from '@/components/features/gift-order';
 import { orderSchema } from '@/schemas/giftOrderSchemas';
+import { toast } from 'react-toastify';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFetch } from '@/hooks/useFetch';
 
 type OrderForm = z.infer<typeof orderSchema>;
+
+type ProductSummary = {
+  id: number;
+  name: string;
+  brandName?: string;
+  price: number;
+  imageURL: string;
+};
 
 export default function GiftOrderPage() {
   const navigate = useNavigate();
   const { productId } = useParams();
   const modalBodyRef = useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuth();
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data: product, error } = useFetch<ProductSummary>({
+    baseUrl: import.meta.env.VITE_API_URL,
+    path: `/api/products/${productId}/summary`,
+    deps: [productId, navigate],
+  });
 
-  useEffect(() => {
-    if (!productId) return;
-    const apiUrl = import.meta.env.VITE_API_URL;
-    setLoading(true);
-    setError(false);
-    fetch(`${apiUrl}/api/products/${productId}`)
-      .then(res => res.json())
-      .then(data => {
-        setProduct(data.data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setProduct(null);
-        setError(true);
-        setLoading(false);
-      });
-  }, [productId]);
+  const {
+    data: orderResult,
+    error: orderError,
+    refetch: orderRefetch,
+  } = useFetch<any>({
+    baseUrl: import.meta.env.VITE_API_URL,
+    path: '/api/order',
+    method: 'POST',
+    auto: false,
+  });
 
   const {
     control,
@@ -53,7 +60,7 @@ export default function GiftOrderPage() {
   } = useForm<OrderForm>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
-      senderName: '',
+      senderName: user?.name || '',
       message: messageCardTemplates[0].defaultTextMessage,
       selectedTemplate: messageCardTemplates[0],
       recipients: [],
@@ -70,23 +77,66 @@ export default function GiftOrderPage() {
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
   const onSubmit = (data: OrderForm) => {
-    const totalQuantity = data.recipients.reduce(
-      (sum: number, r: Recipient) => sum + r.quantity,
-      0
-    );
-    alert(
-      '주문이 완료되었습니다.' +
-        '\n상품명: ' +
-        displayProductName +
-        '\n구매 수량: ' +
-        totalQuantity +
-        '\n발신자 이름: ' +
-        data.senderName +
-        '\n메시지: ' +
-        data.message
-    );
-    navigate('/');
+    if (!user) {
+      logout();
+      toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
+      navigate('/login');
+      return;
+    }
+    const stored = sessionStorage.getItem('userInfo');
+    const token = stored ? JSON.parse(stored).authToken : null;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = token;
+    }
+    orderRefetch({
+      headers,
+      body: {
+        productId: product?.id,
+        ordererName: data.senderName,
+        message: data.message,
+        messageCardId: String(data.selectedTemplate.id),
+        receivers: data.recipients.map(r => ({
+          name: r.name,
+          phoneNumber: r.phone,
+          quantity: r.quantity,
+        })),
+      },
+    });
   };
+
+  useEffect(() => {
+    if (orderError) {
+      if (orderError.message.includes('401')) {
+        toast.error('로그인이 필요합니다');
+        logout();
+        navigate('/login');
+      } else {
+        toast.error(orderError.message || '받는 사람이 없습니다');
+      }
+      return;
+    }
+    if (orderResult) {
+      const totalQuantity = getValues('recipients').reduce(
+        (sum, r) => sum + r.quantity,
+        0
+      );
+      alert(
+        '주문이 완료되었습니다.' +
+          '\n상품명: ' +
+          product?.name +
+          '\n구매 수량: ' +
+          totalQuantity +
+          '\n발신자 이름: ' +
+          getValues('senderName') +
+          '\n메시지: ' +
+          getValues('message')
+      );
+      navigate('/');
+    }
+  }, [orderResult, orderError]);
 
   const handleBackClick = () => {
     navigate(-1);
@@ -97,10 +147,7 @@ export default function GiftOrderPage() {
     setValue('selectedTemplate', template);
   };
 
-  if (loading) return <div>로딩중...</div>;
   if (error || !product) return <div>상품 정보를 불러올 수 없습니다.</div>;
-
-  const displayProductName = product.name.replace(/\s\d+$/, '');
 
   const openModal = () => {
     setIsRecipientModalOpen(true);
@@ -117,14 +164,6 @@ export default function GiftOrderPage() {
     recipients: { quantity: number }[]
   ): number => {
     return recipients.reduce((sum, recipient) => sum + recipient.quantity, 0);
-  };
-
-  const calculateTotalPrice = (
-    unitPrice: number,
-    recipients: { quantity: number }[]
-  ): number => {
-    const totalQuantity = calculateTotalQuantity(recipients);
-    return unitPrice * totalQuantity;
   };
 
   return (
@@ -202,19 +241,21 @@ export default function GiftOrderPage() {
           </FormSection>
           <Separator />
 
-          <ProductSection>
-            <SectionTitle>상품 정보</SectionTitle>
-            <ProductInfo>
-              <ProductImage src={product!.imageURL} alt={product!.name} />
-              <ProductDetails>
-                <ProductName>{displayProductName}</ProductName>
-                <ProductBrand>{product!.brandInfo.name}</ProductBrand>
-                <ProductPrice>
-                  상품가 {product!.price.sellingPrice}원
-                </ProductPrice>
-              </ProductDetails>
-            </ProductInfo>
-          </ProductSection>
+          {product && (
+            <ProductSection>
+              <SectionTitle>상품 정보</SectionTitle>
+              <ProductInfo>
+                <ProductImage src={product.imageURL} alt={product.name} />
+                <ProductDetails>
+                  <ProductName>{product.name}</ProductName>
+                  <ProductBrand>
+                    {product.brandName ?? '브랜드 정보 없음'}
+                  </ProductBrand>
+                  <ProductPrice>상품가 {product.price}원</ProductPrice>
+                </ProductDetails>
+              </ProductInfo>
+            </ProductSection>
+          )}
         </FormContainer>
         <RecipientModal
           isOpen={isRecipientModalOpen}
@@ -224,13 +265,12 @@ export default function GiftOrderPage() {
           modalBodyRef={modalBodyRef}
         />
 
-        <OrderButton onClick={handleSubmit(onSubmit)}>
-          {calculateTotalPrice(
-            product!.price.sellingPrice,
-            getValues('recipients')
-          )}
-          원 주문하기
-        </OrderButton>
+        {product && (
+          <OrderButton onClick={handleSubmit(onSubmit)}>
+            {product.price * calculateTotalQuantity(getValues('recipients'))}원
+            주문하기
+          </OrderButton>
+        )}
       </MobileViewport>
     </AppContainer>
   );

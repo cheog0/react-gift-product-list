@@ -1,7 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
+import { STORAGE_KEY } from '@/constants/storage';
+import { useStorageState } from '@/hooks/useStorageState';
 
 interface User {
+  authToken: string;
   email: string;
+  name: string;
 }
 
 interface AuthContextType {
@@ -13,21 +17,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) setUser(JSON.parse(stored));
-  }, []);
+  const [user, setUser] = useStorageState<User | null>(
+    STORAGE_KEY.USER_INFO,
+    null
+  );
 
   const login = (user: User) => {
     setUser(user);
-    localStorage.setItem('user', JSON.stringify(user));
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
   };
 
   return (

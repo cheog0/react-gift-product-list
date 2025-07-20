@@ -4,21 +4,50 @@ import { NavigationHeader } from '@/components/shared/layout';
 import { LoginForm } from '@/components/features/auth';
 import { theme } from '@/styles/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useFetch } from '@/hooks/useFetch';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+  const { data, error, refetch } = useFetch<any>({
+    baseUrl: apiUrl,
+    path: '/api/login',
+    method: 'POST',
+    auto: false,
+  });
 
   const handleRedirect = (replace: boolean = true) => {
     const from = location.state?.from || '/';
     navigate(from, { replace });
   };
 
-  const handleLogin = (email: string, _password: string) => {
-    login({ email });
-    handleRedirect(true);
+  const handleLogin = (email: string, password: string) => {
+    refetch({
+      headers: { 'Content-Type': 'application/json' },
+      body: { email, password },
+    });
   };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error.message || '@kakao.com 이메일 주소만 가능합니다.');
+      return;
+    }
+    if (data) {
+      login({
+        authToken: data.authToken ?? data.data?.authToken,
+        email: data.email ?? data.data?.email,
+        name: data.name ?? data.data?.name,
+      });
+      handleRedirect(true);
+    }
+  }, [data, error]);
 
   return (
     <AppContainer>
