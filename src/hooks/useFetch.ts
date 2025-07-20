@@ -1,4 +1,4 @@
-import { useState, useEffect, type DependencyList } from 'react';
+import { useState, useEffect, useCallback, type DependencyList } from 'react';
 
 export interface UseFetchOptions {
   baseUrl: string;
@@ -9,13 +9,17 @@ export interface UseFetchOptions {
   headers?: Record<string, string>;
   deps?: DependencyList;
   skip?: boolean;
+  auto?: boolean;
 }
 
 export function getRequestUrl({
   baseUrl,
   path,
   searchParams,
-}: Omit<UseFetchOptions, 'deps'>): string {
+}: Omit<
+  UseFetchOptions,
+  'deps' | 'method' | 'body' | 'headers' | 'skip' | 'auto'
+>): string {
   const urlObj = new URL(path, baseUrl);
   if (searchParams) {
     Object.entries(searchParams).forEach(([key, value]) => {
@@ -26,33 +30,73 @@ export function getRequestUrl({
 }
 
 export function useFetch<T>(options: UseFetchOptions) {
-  const { baseUrl, path, searchParams, deps = [] } = options;
+  const {
+    baseUrl,
+    path,
+    searchParams,
+    method = 'GET',
+    body,
+    headers,
+    deps = [],
+    skip = false,
+    auto = true,
+  } = options;
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [trigger, setTrigger] = useState(0);
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    const url = getRequestUrl({ baseUrl, path, searchParams });
-    fetch(url)
-      .then(res => {
+  const fetchData = useCallback(
+    async (overrideOptions?: Partial<UseFetchOptions>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const url = getRequestUrl({
+          baseUrl: overrideOptions?.baseUrl ?? baseUrl,
+          path: overrideOptions?.path ?? path,
+          searchParams: overrideOptions?.searchParams ?? searchParams,
+        });
+        const res = await fetch(url, {
+          method: overrideOptions?.method ?? method,
+          headers: overrideOptions?.headers ?? headers,
+          body: overrideOptions?.body
+            ? JSON.stringify(overrideOptions.body)
+            : body
+              ? JSON.stringify(body)
+              : undefined,
+        });
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        return res.json();
-      })
-      .then(data => {
-        setData(data.data);
-      })
-      .catch(err => {
+        const json = await res.json();
+        setData(json.data);
+      } catch (err) {
         setData(null);
         setError(err instanceof Error ? err : new Error(String(err)));
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
-  }, deps);
+      }
+    },
+    [baseUrl, path, searchParams, method, body, headers]
+  );
 
-  return { data, loading, error };
+  useEffect(() => {
+    if (skip) return;
+    if (auto || trigger > 0) {
+      fetchData();
+    }
+  }, [...deps, trigger, skip, auto]);
+
+  const refetch = useCallback(
+    (overrideOptions?: Partial<UseFetchOptions>) => {
+      if (overrideOptions) {
+        fetchData(overrideOptions);
+      } else {
+        setTrigger(t => t + 1);
+      }
+    },
+    [fetchData]
+  );
+
+  return { data, loading, error, refetch };
 }
