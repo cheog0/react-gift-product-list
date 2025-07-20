@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
@@ -14,7 +14,6 @@ import { RecipientTable } from '@/components/features/gift-order';
 import { orderSchema } from '@/schemas/giftOrderSchemas';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
-import { Spinner } from '@/components/shared/ui';
 import { useFetch } from '@/hooks/useFetch';
 
 type OrderForm = z.infer<typeof orderSchema>;
@@ -33,14 +32,21 @@ export default function GiftOrderPage() {
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
 
-  const {
-    data: product,
-    loading,
-    error,
-  } = useFetch<ProductSummary>({
+  const { data: product, error } = useFetch<ProductSummary>({
     baseUrl: import.meta.env.VITE_API_URL,
     path: `/api/products/${productId}/summary`,
     deps: [productId, navigate],
+  });
+
+  const {
+    data: orderResult,
+    error: orderError,
+    refetch: orderRefetch,
+  } = useFetch<any>({
+    baseUrl: import.meta.env.VITE_API_URL,
+    path: '/api/order',
+    method: 'POST',
+    auto: false,
   });
 
   const {
@@ -70,54 +76,50 @@ export default function GiftOrderPage() {
 
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
-  const onSubmit = async (data: OrderForm) => {
+  const onSubmit = (data: OrderForm) => {
     if (!user) {
       logout();
       toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
       navigate('/login');
       return;
     }
+    const stored = sessionStorage.getItem('userInfo');
+    const token = stored ? JSON.parse(stored).authToken : null;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = token;
+    }
+    orderRefetch({
+      headers,
+      body: {
+        productId: product?.id,
+        ordererName: data.senderName,
+        message: data.message,
+        messageCardId: String(data.selectedTemplate.id),
+        receivers: data.recipients.map(r => ({
+          name: r.name,
+          phoneNumber: r.phone,
+          quantity: r.quantity,
+        })),
+      },
+    });
+  };
 
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      const stored = sessionStorage.getItem('userInfo');
-      const token = stored ? JSON.parse(stored).authToken : null;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = token;
+  useEffect(() => {
+    if (orderError) {
+      if (orderError.message.includes('401')) {
+        toast.error('로그인이 필요합니다');
+        logout();
+        navigate('/login');
+      } else {
+        toast.error(orderError.message || '받는 사람이 없습니다');
       }
-      const res = await fetch(`${apiUrl}/api/order`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          productId: product?.id,
-          ordererName: data.senderName,
-          message: data.message,
-          messageCardId: String(data.selectedTemplate.id),
-          receivers: data.recipients.map(r => ({
-            name: r.name,
-            phoneNumber: r.phone,
-            quantity: r.quantity,
-          })),
-        }),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-          toast.error('로그인이 필요합니다');
-          logout();
-          navigate('/login');
-        } else {
-          const msg = errData.message || '받는 사람이 없습니다';
-          toast.error(msg);
-        }
-        throw new Error(
-          `HTTP error! status: ${res.status}, message: ${errData.message || ''}`
-        );
-      }
-      const totalQuantity = data.recipients.reduce(
+      return;
+    }
+    if (orderResult) {
+      const totalQuantity = getValues('recipients').reduce(
         (sum, r) => sum + r.quantity,
         0
       );
@@ -128,15 +130,13 @@ export default function GiftOrderPage() {
           '\n구매 수량: ' +
           totalQuantity +
           '\n발신자 이름: ' +
-          data.senderName +
+          getValues('senderName') +
           '\n메시지: ' +
-          data.message
+          getValues('message')
       );
       navigate('/');
-    } catch (e) {
-      return;
     }
-  };
+  }, [orderResult, orderError]);
 
   const handleBackClick = () => {
     navigate(-1);
@@ -147,7 +147,6 @@ export default function GiftOrderPage() {
     setValue('selectedTemplate', template);
   };
 
-  if (loading) return <Spinner />;
   if (error || !product) return <div>상품 정보를 불러올 수 없습니다.</div>;
 
   const openModal = () => {
