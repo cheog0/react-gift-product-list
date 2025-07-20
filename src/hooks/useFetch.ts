@@ -44,7 +44,6 @@ export function useFetch<T>(options: UseFetchOptions) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [trigger, setTrigger] = useState(0);
 
   const fetchData = useCallback(
     async (overrideOptions?: Partial<UseFetchOptions>) => {
@@ -66,7 +65,7 @@ export function useFetch<T>(options: UseFetchOptions) {
               : undefined,
         });
         if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+          throw new Error('@kakao.com 이메일 주소만 가능합니다.');
         }
         const json = await res.json();
         setData(json.data);
@@ -82,18 +81,14 @@ export function useFetch<T>(options: UseFetchOptions) {
 
   useEffect(() => {
     if (skip) return;
-    if (auto || trigger > 0) {
+    if (auto) {
       fetchData();
     }
-  }, [...deps, trigger, skip, auto]);
+  }, [...deps, skip, auto, fetchData]);
 
   const refetch = useCallback(
     (overrideOptions?: Partial<UseFetchOptions>) => {
-      if (overrideOptions) {
-        fetchData(overrideOptions);
-      } else {
-        setTrigger(t => t + 1);
-      }
+      fetchData(overrideOptions);
     },
     [fetchData]
   );
