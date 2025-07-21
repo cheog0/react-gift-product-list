@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useFetch } from '@/hooks/useFetch';
 import { getAuthTokenFromSession, BASE_URL } from '@/constants/api';
 import { Spinner } from '@/components/shared/ui/Spinner';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import type { Product } from '@/types';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 interface ThemeProductSectionProps {
   themeId: number;
@@ -46,23 +47,12 @@ export function ThemeProductSection({
     setHasMore(data.hasMoreList);
   }, [data, cursor]);
 
-  const loader = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!hasMore || loading) return;
-    const observer = new window.IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !loading) {
-          setCursor(prev => prev + LIMIT);
-        }
-      },
-      { threshold: 1.0 }
-    );
-    const el = loader.current;
-    if (el) observer.observe(el);
-    return () => {
-      if (el) observer.unobserve(el);
-    };
-  }, [loader, hasMore, loading, products.length]);
+  const handleIntersect = () => {
+    if (hasMore && !loading) {
+      setCursor(prev => prev + LIMIT);
+    }
+  };
+  const loader = useInfiniteScroll(handleIntersect, hasMore && !loading);
 
   if (loading && products.length === 0) return <Spinner />;
   if (error) return <ProductContainer>에러가 발생했습니다.</ProductContainer>;
