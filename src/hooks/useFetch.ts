@@ -76,7 +76,28 @@ export function useFetch<T>(options: UseFetchOptions) {
         });
 
         if (!res.ok) {
-          throw new Error('받는 사람이 없습니다');
+          let errData: Record<string, unknown> = {};
+          try {
+            errData = await res.json();
+          } catch {}
+          const errorMsg =
+            typeof errData.message === 'string'
+              ? errData.message
+              : res.statusText;
+          const error = new Error(errorMsg);
+          (
+            error as Error & {
+              response?: Record<string, unknown>;
+              status?: number;
+            }
+          ).response = errData;
+          (
+            error as Error & {
+              response?: Record<string, unknown>;
+              status?: number;
+            }
+          ).status = res.status;
+          throw error;
         }
 
         const json = await res.json();
