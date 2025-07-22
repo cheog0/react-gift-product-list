@@ -6,6 +6,7 @@ import styled from '@emotion/styled';
 import { theme as appTheme } from '@/styles/theme';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isFetchError } from '@/hooks/useFetch';
 
 export function ThemeInfoSection({ themeId }: { themeId: number }) {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export function ThemeInfoSection({ themeId }: { themeId: number }) {
   });
 
   useEffect(() => {
-    if (error && (error as any).status === 404) {
+    if (isFetchError(error) && error.status === 404) {
       navigate('/', { replace: true });
     }
   }, [error, navigate]);

@@ -31,6 +31,28 @@ export function getRequestUrl({
   return urlObj.toString();
 }
 
+// 커스텀 에러 클래스
+export class FetchError extends Error {
+  status: number;
+  response: Record<string, unknown>;
+
+  constructor(
+    message: string,
+    status: number,
+    response: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = 'FetchError';
+    this.status = status;
+    this.response = response;
+  }
+}
+
+// 타입가드 함수
+export function isFetchError(err: unknown): err is FetchError {
+  return err instanceof FetchError;
+}
+
 export function useFetch<T>(options: UseFetchOptions) {
   const {
     baseUrl,
@@ -84,20 +106,7 @@ export function useFetch<T>(options: UseFetchOptions) {
             typeof errData.message === 'string'
               ? errData.message
               : res.statusText;
-          const error = new Error(errorMsg);
-          (
-            error as Error & {
-              response?: Record<string, unknown>;
-              status?: number;
-            }
-          ).response = errData;
-          (
-            error as Error & {
-              response?: Record<string, unknown>;
-              status?: number;
-            }
-          ).status = res.status;
-          throw error;
+          throw new FetchError(errorMsg, res.status, errData);
         }
 
         const json = await res.json();
