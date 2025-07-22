@@ -1,10 +1,11 @@
 import { usePaginationFetch } from '@/hooks/usePaginationFetch';
-import { getAuthTokenFromSession, BASE_URL } from '@/constants/api';
+import { BASE_URL } from '@/constants/api';
 import { Spinner } from '@/components/shared/ui/Spinner';
 import { Loader } from '@/components/shared/ui/Loader';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import type { Product } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ThemeProductSectionProps {
   themeId: number;
@@ -17,7 +18,8 @@ export function ThemeProductSection({
   themeId,
   onProductClick,
 }: ThemeProductSectionProps) {
-  const token = getAuthTokenFromSession();
+  const { getAuthToken } = useAuth();
+  const token = getAuthToken();
 
   const {
     items: products,
@@ -28,7 +30,7 @@ export function ThemeProductSection({
   } = usePaginationFetch<Product>({
     baseUrl: BASE_URL,
     path: `/api/themes/${themeId}/products`,
-    headers: { Authorization: token },
+    headers: token ? { Authorization: token } : undefined,
     deps: [themeId],
     limit: LIMIT,
   });

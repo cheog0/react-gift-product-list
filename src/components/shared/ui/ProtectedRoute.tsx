@@ -7,7 +7,8 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const location = useLocation();
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    const redirectUrl = encodeURIComponent(location.pathname);
+    return <Navigate to={`/login?redirect=${redirectUrl}`} replace />;
   }
   return children;
 }

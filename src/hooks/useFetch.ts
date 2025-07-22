@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type DependencyList } from 'react';
 
-export interface UseFetchOptions {
+interface UseFetchOptions {
   baseUrl: string;
   path: string;
   searchParams?: Record<string, string>;
@@ -31,7 +31,6 @@ export function getRequestUrl({
   return urlObj.toString();
 }
 
-// 커스텀 에러 클래스
 export class FetchError extends Error {
   status: number;
   response: Record<string, unknown>;
@@ -48,7 +47,6 @@ export class FetchError extends Error {
   }
 }
 
-// 타입가드 함수
 export function isFetchError(err: unknown): err is FetchError {
   return err instanceof FetchError;
 }

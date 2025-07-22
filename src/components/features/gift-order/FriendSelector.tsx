@@ -30,7 +30,6 @@ export function FriendSelector({
   };
 
   const handleClick = () => {
-    console.log('친구 선택 클릭');
     onAddFriend?.();
   };
 

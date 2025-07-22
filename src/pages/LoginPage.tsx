@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { NavigationHeader } from '@/components/shared/layout';
 import { LoginForm } from '@/components/features/auth';
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const { data, error, refetch } = useFetch<any>({
@@ -22,8 +23,17 @@ export default function LoginPage() {
     auto: false,
   });
 
+  useEffect(() => {
+    const loginError = sessionStorage.getItem('loginError');
+    if (loginError === 'unauthorized') {
+      toast.error('로그인이 필요합니다');
+      sessionStorage.removeItem('loginError');
+    }
+  }, []);
+
   const handleRedirect = (replace: boolean = true) => {
-    const from = location.state?.from || '/';
+    const redirect = searchParams.get('redirect');
+    const from = redirect || location.state?.from || '/';
     navigate(from, { replace });
   };
 

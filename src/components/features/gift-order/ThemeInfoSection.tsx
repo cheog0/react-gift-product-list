@@ -1,5 +1,5 @@
 import { Spinner } from '@/components/shared/ui/Spinner';
-import { getAuthTokenFromSession, BASE_URL } from '@/constants/api';
+import { BASE_URL } from '@/constants/api';
 import { useFetch } from '@/hooks/useFetch';
 import type { ThemeInfo } from '@/types';
 import styled from '@emotion/styled';
@@ -7,10 +7,12 @@ import { theme as appTheme } from '@/styles/theme';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isFetchError } from '@/hooks/useFetch';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ThemeInfoSection({ themeId }: { themeId: number }) {
   const navigate = useNavigate();
-  const token = getAuthTokenFromSession();
+  const { getAuthToken } = useAuth();
+  const token = getAuthToken();
   const {
     data: theme,
     loading,
@@ -18,7 +20,7 @@ export function ThemeInfoSection({ themeId }: { themeId: number }) {
   } = useFetch<ThemeInfo>({
     baseUrl: BASE_URL,
     path: `/api/themes/${themeId}/info`,
-    headers: { Authorization: token },
+    headers: token ? { Authorization: token } : {},
     deps: [themeId],
   });
 

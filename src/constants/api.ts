@@ -1,5 +1,4 @@
 export const BASE_URL = import.meta.env.VITE_API_URL ?? '/';
-
 export const SESSION_STORAGE_KEY = 'userInfo';
 
 export const getThemeInfoPath = (themeId: string | number): string =>
@@ -11,7 +10,6 @@ export const getThemeProductsPath = (themeId: string | number): string =>
   `/api/themes/${themeId}/products`;
 export const getThemeProductsUrl = (themeId: string | number): string =>
   `${BASE_URL}${getThemeProductsPath(themeId)}`;
-
 export function getAuthTokenFromSession(): string {
   const userInfo = sessionStorage.getItem(SESSION_STORAGE_KEY);
   if (!userInfo) return '';

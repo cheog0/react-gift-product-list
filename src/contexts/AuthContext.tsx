@@ -12,6 +12,7 @@ interface AuthContextType {
   user: User | null;
   login: (user: User) => void;
   logout: () => void;
+  getAuthToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,8 +31,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const getAuthToken = (): string | null => {
+    const stored = sessionStorage.getItem(STORAGE_KEY.USER_INFO);
+    if (stored) {
+      try {
+        const parsedUser = JSON.parse(stored);
+        return parsedUser?.authToken || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, getAuthToken }}>
       {children}
     </AuthContext.Provider>
   );
