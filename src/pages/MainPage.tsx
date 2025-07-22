@@ -12,6 +12,7 @@ import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import { useThemes } from '@/hooks/useThemes';
 import { useRankingProducts } from '@/hooks/useRankingProducts';
+import type { GiftTheme } from '@/types';
 
 const DEFAULT_TARGET = 'ALL';
 const DEFAULT_RANK = 'MANY_WISH';
@@ -23,7 +24,7 @@ function ThemesSection() {
   if (loading) return <Spinner />;
   if (error) return null;
   if (themes.length === 0) return null;
-  const handleThemeClick = (theme: import('@/types').GiftTheme) => {
+  const handleThemeClick = (theme: GiftTheme) => {
     navigate(generatePath(THEME_PATH, { themeId: String(theme.themeId) }));
   };
   return <GiftThemeGrid themes={themes} onThemeClick={handleThemeClick} />;
