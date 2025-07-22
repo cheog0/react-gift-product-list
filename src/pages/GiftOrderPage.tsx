@@ -82,20 +82,16 @@ export default function GiftOrderPage() {
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
   const onSubmit = (data: OrderForm) => {
-    const stored = sessionStorage.getItem('userInfo');
-    if (!stored) {
+    if (!user) {
       logout();
       toast.error('로그인이 필요합니다.');
       navigate('/login');
       return;
     }
-    const token = JSON.parse(stored).authToken;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      Authorization: user.authToken,
     };
-    if (token) {
-      headers['Authorization'] = token;
-    }
     orderRefetch({
       headers,
       body: {
