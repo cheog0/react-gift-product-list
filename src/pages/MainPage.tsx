@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate, generatePath } from 'react-router-dom';
 import { NavigationHeader } from '@/components/shared/layout';
 import {
   FriendSelector,
@@ -12,10 +12,10 @@ import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import { useThemes } from '@/hooks/useThemes';
 import { useRankingProducts } from '@/hooks/useRankingProducts';
-import { useNavigate } from 'react-router-dom';
 
 const DEFAULT_TARGET = 'ALL';
 const DEFAULT_RANK = 'MANY_WISH';
+const THEME_PATH = '/themes/:themeId';
 
 function ThemesSection() {
   const { themes, loading, error } = useThemes();
@@ -24,7 +24,7 @@ function ThemesSection() {
   if (error) return null;
   if (themes.length === 0) return null;
   const handleThemeClick = (theme: import('@/types').GiftTheme) => {
-    navigate(`/themes/${theme.themeId}`);
+    navigate(generatePath(THEME_PATH, { themeId: String(theme.themeId) }));
   };
   return <GiftThemeGrid themes={themes} onThemeClick={handleThemeClick} />;
 }
