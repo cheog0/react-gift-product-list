@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useFetch } from '@/hooks/useFetch';
+import { usePaginationFetch } from '@/hooks/usePaginationFetch';
 import { getAuthTokenFromSession, BASE_URL } from '@/constants/api';
 import { Spinner } from '@/components/shared/ui/Spinner';
 import { Loader } from '@/components/shared/ui/Loader';
@@ -14,43 +13,28 @@ interface ThemeProductSectionProps {
 
 const LIMIT = 20;
 
-type ProductListResponse = {
-  list: Product[];
-  hasMoreList: boolean;
-};
-
 export function ThemeProductSection({
   themeId,
   onProductClick,
 }: ThemeProductSectionProps) {
   const token = getAuthTokenFromSession();
-  const [cursor, setCursor] = useState(0);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [hasMore, setHasMore] = useState(true);
 
-  const { data, loading, error } = useFetch<ProductListResponse>({
+  const {
+    items: products,
+    loading,
+    error,
+    hasMore,
+    loadMore,
+  } = usePaginationFetch<Product>({
     baseUrl: BASE_URL,
     path: `/api/themes/${themeId}/products`,
-    searchParams: { cursor: String(cursor), limit: String(LIMIT) },
     headers: { Authorization: token },
-    deps: [themeId, cursor],
-    skip: !hasMore,
+    deps: [themeId],
+    limit: LIMIT,
   });
 
-  useEffect(() => {
-    if (!data) return;
-    if (cursor === 0) {
-      setProducts(data.list || []);
-    } else {
-      setProducts(prev => [...prev, ...(data.list || [])]);
-    }
-    setHasMore(data.hasMoreList);
-  }, [data, cursor]);
-
   const handleIntersect = () => {
-    if (hasMore && !loading) {
-      setCursor(prev => prev + LIMIT);
-    }
+    loadMore();
   };
 
   if (loading && products.length === 0) return <Spinner />;
