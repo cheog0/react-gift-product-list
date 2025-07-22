@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useFetch } from '@/hooks/useFetch';
 import { getAuthTokenFromSession, BASE_URL } from '@/constants/api';
 import { Spinner } from '@/components/shared/ui/Spinner';
+import { Loader } from '@/components/shared/ui/Loader';
 import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import type { Product } from '@/types';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 interface ThemeProductSectionProps {
   themeId: number;
@@ -52,7 +52,6 @@ export function ThemeProductSection({
       setCursor(prev => prev + LIMIT);
     }
   };
-  const loader = useInfiniteScroll(handleIntersect, hasMore && !loading);
 
   if (loading && products.length === 0) return <Spinner />;
   if (error) return <ProductContainer>에러가 발생했습니다.</ProductContainer>;
@@ -75,7 +74,11 @@ export function ThemeProductSection({
           </ProductCard>
         ))}
       </ProductGrid>
-      <div ref={loader} style={{ height: 20 }} />
+      <Loader
+        onView={handleIntersect}
+        enabled={hasMore && !loading}
+        style={{ height: 20 }}
+      />
       {loading && products.length > 0 && <LoadingText>로딩 중...</LoadingText>}
       {!hasMore && products.length > 0 && (
         <EndText>모든 상품을 불러왔어요!</EndText>
