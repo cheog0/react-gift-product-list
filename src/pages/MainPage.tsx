@@ -12,16 +12,21 @@ import styled from '@emotion/styled';
 import { theme } from '@/styles/theme';
 import { useThemes } from '@/hooks/useThemes';
 import { useRankingProducts } from '@/hooks/useRankingProducts';
+import { useNavigate } from 'react-router-dom';
 
 const DEFAULT_TARGET = 'ALL';
 const DEFAULT_RANK = 'MANY_WISH';
 
 function ThemesSection() {
   const { themes, loading, error } = useThemes();
+  const navigate = useNavigate();
   if (loading) return <Spinner />;
   if (error) return null;
   if (themes.length === 0) return null;
-  return <GiftThemeGrid themes={themes} />;
+  const handleThemeClick = (theme: import('@/types').GiftTheme) => {
+    navigate(`/themes/${theme.themeId}`);
+  };
+  return <GiftThemeGrid themes={themes} onThemeClick={handleThemeClick} />;
 }
 
 const RankingLoadingContainer = styled.div`
@@ -69,9 +74,7 @@ export default function MainPage() {
   const targetType = searchParams.get('targetType') || DEFAULT_TARGET;
   const rankType = searchParams.get('rankType') || DEFAULT_RANK;
 
-  const handleAddFriend = (): void => {
-    // 친구 추가 기능 구현
-  };
+  const handleAddFriend = (): void => {};
 
   const handleRankingFilterChange = (nextTarget: string, nextRank: string) => {
     setSearchParams(

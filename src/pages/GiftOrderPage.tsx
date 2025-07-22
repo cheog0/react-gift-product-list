@@ -15,6 +15,7 @@ import { orderSchema } from '@/schemas/giftOrderSchemas';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFetch } from '@/hooks/useFetch';
+import { Spinner } from '@/components/shared/ui/Spinner';
 
 type OrderForm = z.infer<typeof orderSchema>;
 
@@ -32,7 +33,11 @@ export default function GiftOrderPage() {
   const modalBodyRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
 
-  const { data: product, error } = useFetch<ProductSummary>({
+  const {
+    data: product,
+    error,
+    loading,
+  } = useFetch<ProductSummary>({
     baseUrl: import.meta.env.VITE_API_URL,
     path: `/api/products/${productId}/summary`,
     deps: [productId, navigate],
@@ -77,14 +82,14 @@ export default function GiftOrderPage() {
   const [isRecipientModalOpen, setIsRecipientModalOpen] = useState(false);
 
   const onSubmit = (data: OrderForm) => {
-    if (!user) {
+    const stored = sessionStorage.getItem('userInfo');
+    if (!stored) {
       logout();
-      toast.error('로그인이 필요합니다. 다시 로그인 해주세요.');
+      toast.error('로그인이 필요합니다.');
       navigate('/login');
       return;
     }
-    const stored = sessionStorage.getItem('userInfo');
-    const token = stored ? JSON.parse(stored).authToken : null;
+    const token = JSON.parse(stored).authToken;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -109,12 +114,15 @@ export default function GiftOrderPage() {
 
   useEffect(() => {
     if (orderError) {
-      if (orderError.message.includes('401')) {
-        toast.error('로그인이 필요합니다');
+      const status = (orderError as Error & { status?: number }).status;
+      const msg = status === 400 ? '받는 사람이 없습니다' : orderError.message;
+      toast.error(msg);
+      if (
+        orderError.message?.includes('로그인') ||
+        orderError.message?.includes('401')
+      ) {
         logout();
         navigate('/login');
-      } else {
-        toast.error(orderError.message || '받는 사람이 없습니다');
       }
       return;
     }
@@ -147,7 +155,9 @@ export default function GiftOrderPage() {
     setValue('selectedTemplate', template);
   };
 
-  if (error || !product) return <div>상품 정보를 불러올 수 없습니다.</div>;
+  if (loading) return <Spinner />;
+  if (error) return <div>상품 정보를 불러올 수 없습니다.</div>;
+  if (!product) return <div>상품이 없습니다.</div>;
 
   const openModal = () => {
     setIsRecipientModalOpen(true);

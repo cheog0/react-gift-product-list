@@ -36,7 +36,14 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (error) {
-      toast.error(error.message || '@kakao.com 이메일 주소만 가능합니다.');
+      const status = (error as Error & { status?: number }).status;
+      const msg =
+        (status === 400 && error.message === 'Bad Request') ||
+        error.message?.includes('kakao.com') ||
+        error.message?.includes('이메일')
+          ? '@kakao.com 이메일 주소만 가능합니다.'
+          : error.message;
+      toast.error(msg);
       return;
     }
     if (data) {

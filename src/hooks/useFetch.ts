@@ -21,12 +21,36 @@ export function getRequestUrl({
   'deps' | 'method' | 'body' | 'headers' | 'skip' | 'auto'
 >): string {
   const urlObj = new URL(path, baseUrl);
+
   if (searchParams) {
     Object.entries(searchParams).forEach(([key, value]) => {
       urlObj.searchParams.set(key, value);
     });
   }
+
   return urlObj.toString();
+}
+
+// 커스텀 에러 클래스
+export class FetchError extends Error {
+  status: number;
+  response: Record<string, unknown>;
+
+  constructor(
+    message: string,
+    status: number,
+    response: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = 'FetchError';
+    this.status = status;
+    this.response = response;
+  }
+}
+
+// 타입가드 함수
+export function isFetchError(err: unknown): err is FetchError {
+  return err instanceof FetchError;
 }
 
 export function useFetch<T>(options: UseFetchOptions) {
@@ -41,60 +65,78 @@ export function useFetch<T>(options: UseFetchOptions) {
     skip = false,
     auto = true,
   } = options;
+
   const [data, setData] = useState<T | null>(null);
+
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState<Error | null>(null);
-  const [trigger, setTrigger] = useState(0);
 
   const fetchData = useCallback(
     async (overrideOptions?: Partial<UseFetchOptions>) => {
       setLoading(true);
+
       setError(null);
+
       try {
         const url = getRequestUrl({
           baseUrl: overrideOptions?.baseUrl ?? baseUrl,
           path: overrideOptions?.path ?? path,
           searchParams: overrideOptions?.searchParams ?? searchParams,
         });
+
         const res = await fetch(url, {
           method: overrideOptions?.method ?? method,
+
           headers: overrideOptions?.headers ?? headers,
+
           body: overrideOptions?.body
             ? JSON.stringify(overrideOptions.body)
             : body
               ? JSON.stringify(body)
               : undefined,
         });
+
         if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+          let errData: Record<string, unknown> = {};
+          try {
+            errData = await res.json();
+          } catch {}
+          const errorMsg =
+            typeof errData.message === 'string'
+              ? errData.message
+              : res.statusText;
+          throw new FetchError(errorMsg, res.status, errData);
         }
+
         const json = await res.json();
+
         setData(json.data);
       } catch (err) {
         setData(null);
+
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
       }
     },
+
     [baseUrl, path, searchParams, method, body, headers]
   );
 
   useEffect(() => {
     if (skip) return;
-    if (auto || trigger > 0) {
+
+    if (auto) {
       fetchData();
     }
-  }, [...deps, trigger, skip, auto]);
+  }, [...deps, skip, auto]);
 
   const refetch = useCallback(
     (overrideOptions?: Partial<UseFetchOptions>) => {
-      if (overrideOptions) {
-        fetchData(overrideOptions);
-      } else {
-        setTrigger(t => t + 1);
-      }
+      fetchData(overrideOptions);
     },
+
     [fetchData]
   );
 

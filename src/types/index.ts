@@ -46,3 +46,11 @@ export interface GiftOrderForm {
 
 export type Recipient = { name: string; phone: string; quantity: number };
 export type RecipientsForm = { recipients: Recipient[] };
+
+export interface ThemeInfo {
+  themeId: number;
+  name: string;
+  title: string;
+  description: string;
+  backgroundColor: string;
+}

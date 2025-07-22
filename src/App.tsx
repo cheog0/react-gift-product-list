@@ -4,6 +4,7 @@ import LoginPage from '@/pages/LoginPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import MyPage from '@/pages/MyPage';
 import GiftOrderPage from '@/pages/GiftOrderPage';
+import ThemePage from '@/pages/ThemePage';
 import { ProtectedRoute } from '@/components/shared/ui';
 import { ROUTES } from '@/constants/routes';
 import { ToastContainer } from 'react-toastify';
@@ -32,6 +33,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/themes/:themeId" element={<ThemePage />} />
       </Routes>
       <ToastContainer position="top-center" autoClose={2000} hideProgressBar />
     </Router>

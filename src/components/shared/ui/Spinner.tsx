@@ -4,7 +4,8 @@ const SpinnerWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 120px;
+  padding: 40px 0 0 0;
+  margin-top: 130px;
 `;
 
 const SpinnerCircle = styled.div`
